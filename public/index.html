@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片识别应用</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-camera"></i> 图片识别应用</h1>
+            <p>上传图片，AI智能识别图片内容</p>
+        </header>
+
+        <main>
+            <!-- 上传区域 -->
+            <section class="upload-section">
+                <div class="upload-container">
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-content">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h3>选择或拖放图片</h3>
+                            <p>支持 JPG、PNG、GIF 格式，最大10MB</p>
+                            <button class="upload-btn" id="uploadBtn">选择图片</button>
+                        </div>
+                        <input type="file" id="fileInput" accept="image/*" hidden>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 处理状态 -->
+            <section class="status-section" id="statusSection" style="display: none;">
+                <div class="status-card">
+                    <div class="loading-spinner"></div>
+                    <h3>正在处理图片...</h3>
+                    <p>请稍等，AI正在识别图片内容</p>
+                </div>
+            </section>
+
+            <!-- 结果展示区域 -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <h2><i class="fas fa-eye"></i> 识别结果</h2>
+                <div class="result-container">
+                    <div class="image-preview">
+                        <img id="previewImage" src="" alt="预览图片">
+                    </div>
+                    <div class="result-details">
+                        <h3>识别内容</h3>
+                        <div id="detectionResults"></div>
+                        <div class="result-meta">
+                            <p><strong>处理时间:</strong> <span id="processTime"></span></p>
+                            <p><strong>文件名:</strong> <span id="fileName"></span></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 历史记录 -->
+            <section class="history-section">
+                <h2><i class="fas fa-history"></i> 历史记录</h2>
+                <div class="history-container" id="historyContainer">
+                    <div class="no-history">
+                        <i class="fas fa-clock"></i>
+                        <p>暂无历史记录</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 图片识别应用 | 基于AI技术</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
