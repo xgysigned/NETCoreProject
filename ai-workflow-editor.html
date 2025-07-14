@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -1175,98 +1175,112 @@
 
             // 绑定拖拽事件
             bindDragEvents() {
-                // 等待DOM完全渲染后再绑定事件
+                console.log('开始绑定拖拽事件');
+                
+                // 使用更长的延迟确保所有组件都已初始化
                 setTimeout(() => {
                     const nodeItems = document.querySelectorAll('.node-item');
                     console.log('找到节点项数量:', nodeItems.length);
                     
+                    if (nodeItems.length === 0) {
+                        console.error('未找到任何节点项，拖拽功能无法正常工作');
+                        return;
+                    }
+                    
+                    // 绑定节点拖拽事件
                     nodeItems.forEach((item, index) => {
-                        console.log(`绑定第${index + 1}个节点:`, item.getAttribute('data-type'));
+                        const nodeType = item.getAttribute('data-type');
+                        console.log(`绑定第${index + 1}个节点:`, nodeType);
                         
                         // 确保元素可拖拽
                         item.draggable = true;
+                        item.setAttribute('draggable', 'true');
+                        
+                        // 清除之前的事件监听器
+                        item.removeEventListener('dragstart', null);
+                        item.removeEventListener('dragend', null);
                         
                         item.addEventListener('dragstart', (e) => {
-                            const nodeType = item.getAttribute('data-type');
-                            console.log('开始拖拽节点:', nodeType);
+                            console.log('🚀 开始拖拽节点:', nodeType);
                             e.dataTransfer.setData('text/plain', nodeType);
+                            e.dataTransfer.setData('application/x-node-type', nodeType);
                             e.dataTransfer.effectAllowed = 'copy';
                             item.classList.add('dragging');
+                            
+                            // 设置拖拽图像
+                            const dragImage = item.cloneNode(true);
+                            dragImage.style.opacity = '0.8';
+                            document.body.appendChild(dragImage);
+                            e.dataTransfer.setDragImage(dragImage, 50, 20);
+                            setTimeout(() => document.body.removeChild(dragImage), 0);
                         });
 
                         item.addEventListener('dragend', (e) => {
                             item.classList.remove('dragging');
-                            console.log('拖拽结束');
+                            console.log('🏁 拖拽结束');
                         });
                         
-                        // 添加鼠标事件用于调试
-                        item.addEventListener('mousedown', (e) => {
-                            console.log('鼠标按下:', item.getAttribute('data-type'));
+                        // 测试点击事件
+                        item.addEventListener('click', (e) => {
+                            console.log('📌 点击节点，直接添加到画布中心:', nodeType);
+                            this.addNodeByType(nodeType, 400, 300);
                         });
                     });
 
                     // 绑定画布拖拽事件
                     const graphContainer = document.getElementById('graph');
-                    const canvasContainer = document.querySelector('.canvas-container');
+                    if (!graphContainer) {
+                        console.error('未找到画布容器');
+                        return;
+                    }
                     
-                    [graphContainer, canvasContainer].forEach(container => {
-                        if (container) {
-                            console.log('绑定容器拖拽事件:', container.id || container.className);
-                            
-                            container.addEventListener('dragover', (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                e.dataTransfer.dropEffect = 'copy';
-                            });
+                    console.log('绑定画布拖拽事件');
+                    
+                    // 清除之前的事件监听器
+                    graphContainer.removeEventListener('dragover', null);
+                    graphContainer.removeEventListener('drop', null);
+                    
+                    graphContainer.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.dataTransfer.dropEffect = 'copy';
+                        console.log('💫 拖拽经过画布');
+                    });
 
-                            container.addEventListener('dragenter', (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                            });
+                    graphContainer.addEventListener('dragenter', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('🎯 拖拽进入画布');
+                    });
 
-                            container.addEventListener('drop', (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                
-                                const nodeType = e.dataTransfer.getData('text/plain');
-                                console.log('放置节点:', nodeType, '在容器:', container.id || container.className);
-                                
-                                if (!nodeType) {
-                                    console.log('未获取到节点类型');
-                                    return;
-                                }
-                                
-                                const rect = container.getBoundingClientRect();
-                                const x = e.clientX - rect.left;
-                                const y = e.clientY - rect.top;
-                                
-                                console.log('原始坐标:', x, y, '容器尺寸:', rect);
-                                
-                                // 使用画布相对坐标
-                                let canvasX = x;
-                                let canvasY = y;
-                                
-                                // 如果是LogicFlow画布，尝试坐标转换
-                                if (this.lf && this.lf.getPointByClient && container === graphContainer) {
-                                    try {
-                                        const point = this.lf.getPointByClient(x, y);
-                                        console.log('LogicFlow坐标转换:', point);
-                                        canvasX = point.x;
-                                        canvasY = point.y;
-                                    } catch (error) {
-                                        console.error('坐标转换失败:', error);
-                                        canvasX = x;
-                                        canvasY = y;
-                                    }
-                                }
-                                
-                                this.addNodeByType(nodeType, canvasX, canvasY);
-                            });
+                    graphContainer.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        console.log('🎪 拖拽放置事件触发');
+                        
+                        let nodeType = e.dataTransfer.getData('text/plain') || 
+                                      e.dataTransfer.getData('application/x-node-type');
+                        
+                        console.log('📦 获取节点类型:', nodeType);
+                        
+                        if (!nodeType) {
+                            console.error('❌ 未获取到节点类型');
+                            return;
                         }
+                        
+                        const rect = graphContainer.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+                        
+                        console.log('📍 放置坐标:', { x, y, rect });
+                        
+                        // 直接使用鼠标坐标，不进行复杂转换
+                        this.addNodeByType(nodeType, x, y);
                     });
                     
-                    console.log('拖拽事件绑定完成');
-                }, 500);
+                    console.log('✅ 拖拽事件绑定完成');
+                }, 1000);
             }
 
             // 根据类型添加节点
