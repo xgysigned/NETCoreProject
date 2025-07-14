@@ -1,13 +1,13 @@
-THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI流程编排工具</title>
-    <script src="https://unpkg.com/@logicflow/core@2.0.0-next.17/dist/index.js"></script>
-    <script src="https://unpkg.com/@logicflow/extension@2.0.0-next.17/dist/index.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/@logicflow/core@2.0.0-next.17/dist/style/index.css">
-    <link rel="stylesheet" href="https://unpkg.com/@logicflow/extension@2.0.0-next.17/dist/style/index.css">
+    <script src="https://unpkg.com/@logicflow/core@1.2.26/dist/logic-flow.js"></script>
+    <script src="https://unpkg.com/@logicflow/extension@1.2.26/dist/logic-flow-extension.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@logicflow/core@1.2.26/dist/style/index.css">
+    <link rel="stylesheet" href="https://unpkg.com/@logicflow/extension@1.2.26/dist/style/index.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* 基础重置和变量 */
@@ -525,6 +525,9 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                     <button class="btn btn-success" onclick="addSampleWorkflow()">
                         <i class="fas fa-magic"></i> 示例流程
                     </button>
+                    <button class="btn btn-info" onclick="testDragSystem()">
+                        <i class="fas fa-bug"></i> 测试拖拽
+                    </button>
                 </div>
             </div>
             <div class="toolbar-right">
@@ -679,6 +682,23 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
 
     <script>
         // LogicFlow 应用主类
+        // 等待LogicFlow库加载完成后获取基础类
+        let RectNode, RectNodeModel, PolygonNode, PolygonNodeModel;
+        
+        // 确保LogicFlow已加载
+        function initLogicFlowClasses() {
+            if (typeof LogicFlow !== 'undefined') {
+                const classes = LogicFlow;
+                RectNode = classes.RectNode;
+                RectNodeModel = classes.RectNodeModel; 
+                PolygonNode = classes.PolygonNode;
+                PolygonNodeModel = classes.PolygonNodeModel;
+                console.log('LogicFlow基础类初始化完成');
+                return true;
+            }
+            return false;
+        }
+        
         class LLMWorkflowApp {
             constructor() {
                 this.lf = null;
@@ -690,6 +710,13 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
 
             // 初始化应用
             init() {
+                // 首先初始化LogicFlow类
+                if (!initLogicFlowClasses()) {
+                    console.error('LogicFlow库未加载');
+                    setTimeout(() => this.init(), 100);
+                    return;
+                }
+                
                 this.initLogicFlow();
                 this.registerCustomNodes();
                 // 延迟绑定事件，确保LogicFlow完全初始化
@@ -705,7 +732,7 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                 const container = document.getElementById('graph');
                 console.log('画布容器:', container);
                 
-                this.lf = new LogicFlow.default({
+                this.lf = new LogicFlow({
                     container: document.getElementById('graph'),
                     width: 800,
                     height: 600,
@@ -753,14 +780,7 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                     adjustNodePosition: true,
                     nodeTextDraggable: false,
                     edgeTextDraggable: false,
-                    multipleSelectKey: 'ctrl',
-                    // 开启拖拽节点到画布
-                    pluginsOptions: {
-                        DndPanel: {
-                            panel: '.node-library',
-                            autoToFront: true
-                        }
-                    }
+                    multipleSelectKey: 'ctrl'
                 });
 
                 console.log('LogicFlow初始化完成:', this.lf);
@@ -777,8 +797,7 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
             // 注册自定义节点
             registerCustomNodes() {
                 // 开始节点
-                class StartNode extends LogicFlow.RectNode {
-                    static extendKey = 'StartNode';
+                class StartNode extends RectNode {
                     
                     getShapeStyle() {
                         const style = super.getShapeStyle();
@@ -803,8 +822,7 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                     }
                 }
 
-                class StartNodeModel extends LogicFlow.RectNodeModel {
-                    static extendKey = 'StartNode';
+                class StartNodeModel extends RectNodeModel {
                     
                     constructor(data, graphModel) {
                         super(data, graphModel);
@@ -827,8 +845,7 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                 }
 
                 // 结束节点
-                class EndNode extends LogicFlow.RectNode {
-                    static extendKey = 'EndNode';
+                class EndNode extends RectNode {
                     
                     getShapeStyle() {
                         const style = super.getShapeStyle();
@@ -853,8 +870,7 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                     }
                 }
 
-                class EndNodeModel extends LogicFlow.RectNodeModel {
-                    static extendKey = 'EndNode';
+                class EndNodeModel extends RectNodeModel {
                     
                     constructor(data, graphModel) {
                         super(data, graphModel);
@@ -877,8 +893,7 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                 }
 
                 // LLM节点
-                class LLMNode extends LogicFlow.RectNode {
-                    static extendKey = 'LLMNode';
+                class LLMNode extends RectNode {
                     
                     getShapeStyle() {
                         const style = super.getShapeStyle();
@@ -903,8 +918,7 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                     }
                 }
 
-                class LLMNodeModel extends LogicFlow.RectNodeModel {
-                    static extendKey = 'LLMNode';
+                class LLMNodeModel extends RectNodeModel {
                     
                     constructor(data, graphModel) {
                         super(data, graphModel);
@@ -933,8 +947,7 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                 }
 
                 // 知识库节点
-                class KnowledgeNode extends LogicFlow.RectNode {
-                    static extendKey = 'KnowledgeNode';
+                class KnowledgeNode extends RectNode {
                     
                     getShapeStyle() {
                         const style = super.getShapeStyle();
@@ -959,8 +972,7 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                     }
                 }
 
-                class KnowledgeNodeModel extends LogicFlow.RectNodeModel {
-                    static extendKey = 'KnowledgeNode';
+                class KnowledgeNodeModel extends RectNodeModel {
                     
                     constructor(data, graphModel) {
                         super(data, graphModel);
@@ -989,8 +1001,7 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                 }
 
                 // 条件判断节点
-                class ConditionNode extends LogicFlow.PolygonNode {
-                    static extendKey = 'ConditionNode';
+                class ConditionNode extends PolygonNode {
                     
                     getShapeStyle() {
                         const style = super.getShapeStyle();
@@ -1013,8 +1024,7 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                     }
                 }
 
-                class ConditionNodeModel extends LogicFlow.PolygonNodeModel {
-                    static extendKey = 'ConditionNode';
+                class ConditionNodeModel extends PolygonNodeModel {
                     
                     constructor(data, graphModel) {
                         super(data, graphModel);
@@ -1062,8 +1072,7 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                 }
 
                 // API调用节点
-                class APINode extends LogicFlow.RectNode {
-                    static extendKey = 'APINode';
+                class APINode extends RectNode {
                     
                     getShapeStyle() {
                         const style = super.getShapeStyle();
@@ -1088,8 +1097,7 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                     }
                 }
 
-                class APINodeModel extends LogicFlow.RectNodeModel {
-                    static extendKey = 'APINode';
+                class APINodeModel extends RectNodeModel {
                     
                     constructor(data, graphModel) {
                         super(data, graphModel);
@@ -1118,18 +1126,12 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                 }
 
                 // 注册所有节点
-                this.lf.register(StartNode);
-                this.lf.register(StartNodeModel);
-                this.lf.register(EndNode);
-                this.lf.register(EndNodeModel);
-                this.lf.register(LLMNode);
-                this.lf.register(LLMNodeModel);
-                this.lf.register(KnowledgeNode);
-                this.lf.register(KnowledgeNodeModel);
-                this.lf.register(ConditionNode);
-                this.lf.register(ConditionNodeModel);
-                this.lf.register(APINode);
-                this.lf.register(APINodeModel);
+                this.lf.register('StartNode', StartNode, StartNodeModel);
+                this.lf.register('EndNode', EndNode, EndNodeModel);
+                this.lf.register('LLMNode', LLMNode, LLMNodeModel);
+                this.lf.register('KnowledgeNode', KnowledgeNode, KnowledgeNodeModel);
+                this.lf.register('ConditionNode', ConditionNode, ConditionNodeModel);
+                this.lf.register('APINode', APINode, APINodeModel);
                 
                 console.log('所有自定义节点注册完成');
             }
@@ -1331,20 +1333,54 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                 };
 
                 try {
-                    console.log('准备添加节点，数据:', nodeData);
-                    const node = this.lf.addNode(nodeData);
-                    console.log('节点添加结果:', node);
+                    console.log('🔥 准备添加节点:', {
+                        type: nodeType,
+                        originalType: type,
+                        position: { x, y },
+                        data: nodeData
+                    });
                     
-                    if (node) {
+                    // 检查LogicFlow是否已初始化
+                    if (!this.lf) {
+                        console.error('❌ LogicFlow未初始化');
+                        this.addLog('error', 'LogicFlow未初始化');
+                        return;
+                    }
+                    
+                    // 尝试添加节点
+                    const node = this.lf.addNode(nodeData);
+                    console.log('🎉 节点添加结果:', node);
+                    
+                    if (node && node.id) {
                         this.nodeConfigs.set(node.id, nodeData.properties.config);
-                        this.addLog('success', `已添加${this.getNodeDisplayName(type)}节点`);
-                        console.log('节点添加成功:', node.id);
+                        this.addLog('success', `✅ 已添加${this.getNodeDisplayName(type)}节点`);
+                        console.log('✨ 节点添加成功! ID:', node.id);
+                        
+                        // 选中新添加的节点
+                        setTimeout(() => {
+                            this.lf.selectNodeById(node.id);
+                            this.selectNode(node);
+                        }, 100);
                     } else {
-                        console.error('节点添加失败');
+                        console.error('❌ 节点添加失败，返回值:', node);
                         this.addLog('error', '节点添加失败');
+                        
+                        // 尝试简化节点数据重新添加
+                        const simpleNodeData = {
+                            type: nodeType,
+                            x: x,
+                            y: y
+                        };
+                        console.log('🔄 尝试简化数据重新添加:', simpleNodeData);
+                        const retryNode = this.lf.addNode(simpleNodeData);
+                        if (retryNode) {
+                            console.log('🎯 简化数据添加成功:', retryNode);
+                            this.addLog('success', `✅ 已添加${this.getNodeDisplayName(type)}节点`);
+                        }
                     }
                 } catch (error) {
-                    console.error('添加节点时出错:', error);
+                    console.error('💥 添加节点时出错:', error);
+                    console.error('错误堆栈:', error.stack);
                     this.addLog('error', '添加节点时出错: ' + error.message);
                 }
             }
@@ -1863,6 +1899,25 @@ THIS SHOULD BE A LINTER ERROR<!DOCTYPE html>
                 window.app.addLog('info', '示例工作流已创建，您可以尝试连接这些节点');
             } else {
                 console.error('应用未初始化');
+            }
+        }
+
+        function testDragSystem() {
+            console.log('=== 拖拽系统测试 ===');
+            console.log('LogicFlow:', typeof LogicFlow !== 'undefined' ? '已加载' : '未加载');
+            console.log('App实例:', window.app ? '已创建' : '未创建');
+            
+            if (window.app) {
+                console.log('LogicFlow实例:', window.app.lf ? '已创建' : '未创建');
+                console.log('节点数量:', document.querySelectorAll('.node-item').length);
+                
+                // 直接测试添加节点
+                try {
+                    window.app.addNodeByType('llm', 300, 200);
+                    console.log('✅ 直接添加节点成功');
+                } catch (error) {
+                    console.error('❌ 直接添加节点失败:', error);
+                }
             }
         }
 
