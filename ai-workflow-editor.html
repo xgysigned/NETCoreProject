@@ -522,8 +522,8 @@
                     <button class="btn btn-secondary" onclick="clearWorkflow()">
                         <i class="fas fa-trash"></i> 清空
                     </button>
-                    <button class="btn btn-success" onclick="testAddNode()">
-                        <i class="fas fa-plus"></i> 测试添加节点
+                    <button class="btn btn-success" onclick="addSampleWorkflow()">
+                        <i class="fas fa-magic"></i> 示例流程
                     </button>
                 </div>
             </div>
@@ -542,6 +542,9 @@
             <div class="sidebar-left">
                 <div class="panel-header">
                     <h3>节点库</h3>
+                    <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 6px; padding: 8px; margin: 8px 0; font-size: 12px; color: #0369a1;">
+                        <i class="fas fa-info-circle"></i> 拖拽节点到中央画布创建工作流
+                    </div>
                 </div>
                 <div class="node-panel">
                     <div class="node-category">
@@ -704,6 +707,8 @@
                 
                 this.lf = new LogicFlow.default({
                     container: document.getElementById('graph'),
+                    width: 800,
+                    height: 600,
                     grid: {
                         size: 20,
                         visible: true,
@@ -741,13 +746,21 @@
                     edgeType: 'bezier',
                     allowRotate: false,
                     allowResize: false,
-                    hoverOutline: false,
+                    hoverOutline: true,
                     hideAnchors: false,
                     adjustEdge: true,
-                    adjustEdgeStartAndEnd: false,
+                    adjustEdgeStartAndEnd: true,
                     adjustNodePosition: true,
                     nodeTextDraggable: false,
                     edgeTextDraggable: false,
+                    multipleSelectKey: 'ctrl',
+                    // 开启拖拽节点到画布
+                    pluginsOptions: {
+                        DndPanel: {
+                            panel: '.node-library',
+                            autoToFront: true
+                        }
+                    }
                 });
 
                 console.log('LogicFlow初始化完成:', this.lf);
@@ -805,9 +818,9 @@
                         return [
                             {
                                 x: x + width / 2,
-                                y: y,
-                                id: `${id}_right`,
-                                type: 'right'
+                                y: y + height,
+                                id: `${id}_bottom`,
+                                type: 'bottom'
                             }
                         ];
                     }
@@ -854,10 +867,10 @@
                         const { width, height, x, y, id } = this;
                         return [
                             {
-                                x: x - width / 2,
-                                y: y,
-                                id: `${id}_left`,
-                                type: 'left'
+                                x: x,
+                                y: y - height / 2,
+                                id: `${id}_top`,
+                                type: 'top'
                             }
                         ];
                     }
@@ -899,6 +912,24 @@
                         this.width = 100;
                         this.height = 60;
                     }
+
+                    getDefaultAnchor() {
+                        const { width, height, x, y, id } = this;
+                        return [
+                            {
+                                x: x,
+                                y: y - height / 2,
+                                id: `${id}_top`,
+                                type: 'top'
+                            },
+                            {
+                                x: x,
+                                y: y + height / 2,
+                                id: `${id}_bottom`,
+                                type: 'bottom'
+                            }
+                        ];
+                    }
                 }
 
                 // 知识库节点
@@ -936,6 +967,24 @@
                         this.text.value = '知识库';
                         this.width = 100;
                         this.height = 60;
+                    }
+
+                    getDefaultAnchor() {
+                        const { width, height, x, y, id } = this;
+                        return [
+                            {
+                                x: x,
+                                y: y - height / 2,
+                                id: `${id}_top`,
+                                type: 'top'
+                            },
+                            {
+                                x: x,
+                                y: y + height / 2,
+                                id: `${id}_bottom`,
+                                type: 'bottom'
+                            }
+                        ];
                     }
                 }
 
@@ -980,6 +1029,36 @@
                             [0, 30]
                         ];
                     }
+
+                    getDefaultAnchor() {
+                        const { width, height, x, y, id } = this;
+                        return [
+                            {
+                                x: x,
+                                y: y - height / 2,
+                                id: `${id}_top`,
+                                type: 'top'
+                            },
+                            {
+                                x: x + width / 2,
+                                y: y,
+                                id: `${id}_right`,
+                                type: 'right'
+                            },
+                            {
+                                x: x,
+                                y: y + height / 2,
+                                id: `${id}_bottom`,
+                                type: 'bottom'
+                            },
+                            {
+                                x: x - width / 2,
+                                y: y,
+                                id: `${id}_left`,
+                                type: 'left'
+                            }
+                        ];
+                    }
                 }
 
                 // API调用节点
@@ -1017,6 +1096,24 @@
                         this.text.value = 'API调用';
                         this.width = 100;
                         this.height = 60;
+                    }
+
+                    getDefaultAnchor() {
+                        const { width, height, x, y, id } = this;
+                        return [
+                            {
+                                x: x,
+                                y: y - height / 2,
+                                id: `${id}_top`,
+                                type: 'top'
+                            },
+                            {
+                                x: x,
+                                y: y + height / 2,
+                                id: `${id}_bottom`,
+                                type: 'bottom'
+                            }
+                        ];
                     }
                 }
 
@@ -1083,11 +1180,17 @@
                     const nodeItems = document.querySelectorAll('.node-item');
                     console.log('找到节点项数量:', nodeItems.length);
                     
-                    nodeItems.forEach(item => {
+                    nodeItems.forEach((item, index) => {
+                        console.log(`绑定第${index + 1}个节点:`, item.getAttribute('data-type'));
+                        
+                        // 确保元素可拖拽
+                        item.draggable = true;
+                        
                         item.addEventListener('dragstart', (e) => {
                             const nodeType = item.getAttribute('data-type');
                             console.log('开始拖拽节点:', nodeType);
                             e.dataTransfer.setData('text/plain', nodeType);
+                            e.dataTransfer.effectAllowed = 'copy';
                             item.classList.add('dragging');
                         });
 
@@ -1095,45 +1198,74 @@
                             item.classList.remove('dragging');
                             console.log('拖拽结束');
                         });
+                        
+                        // 添加鼠标事件用于调试
+                        item.addEventListener('mousedown', (e) => {
+                            console.log('鼠标按下:', item.getAttribute('data-type'));
+                        });
                     });
 
+                    // 绑定画布拖拽事件
                     const graphContainer = document.getElementById('graph');
-                    if (graphContainer) {
-                        graphContainer.addEventListener('dragover', (e) => {
-                            e.preventDefault();
-                            e.dataTransfer.dropEffect = 'copy';
-                        });
+                    const canvasContainer = document.querySelector('.canvas-container');
+                    
+                    [graphContainer, canvasContainer].forEach(container => {
+                        if (container) {
+                            console.log('绑定容器拖拽事件:', container.id || container.className);
+                            
+                            container.addEventListener('dragover', (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                e.dataTransfer.dropEffect = 'copy';
+                            });
 
-                        graphContainer.addEventListener('drop', (e) => {
-                            e.preventDefault();
-                            const nodeType = e.dataTransfer.getData('text/plain');
-                            console.log('放置节点:', nodeType);
-                            
-                            if (!nodeType) return;
-                            
-                            const rect = graphContainer.getBoundingClientRect();
-                            const x = e.clientX - rect.left;
-                            const y = e.clientY - rect.top;
-                            
-                            console.log('坐标:', x, y);
-                            
-                            // 检查LogicFlow是否已初始化
-                            if (this.lf && this.lf.getPointByClient) {
-                                try {
-                                    // 转换为LogicFlow坐标
-                                    const point = this.lf.getPointByClient(x, y);
-                                    console.log('转换后坐标:', point);
-                                    this.addNodeByType(nodeType, point.x, point.y);
-                                } catch (error) {
-                                    console.error('坐标转换失败，使用原始坐标:', error);
-                                    this.addNodeByType(nodeType, x - 50, y - 20);
+                            container.addEventListener('dragenter', (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            });
+
+                            container.addEventListener('drop', (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                const nodeType = e.dataTransfer.getData('text/plain');
+                                console.log('放置节点:', nodeType, '在容器:', container.id || container.className);
+                                
+                                if (!nodeType) {
+                                    console.log('未获取到节点类型');
+                                    return;
                                 }
-                            } else {
-                                console.log('LogicFlow未初始化，使用原始坐标');
-                                this.addNodeByType(nodeType, x - 50, y - 20);
-                            }
-                        });
-                    }
+                                
+                                const rect = container.getBoundingClientRect();
+                                const x = e.clientX - rect.left;
+                                const y = e.clientY - rect.top;
+                                
+                                console.log('原始坐标:', x, y, '容器尺寸:', rect);
+                                
+                                // 使用画布相对坐标
+                                let canvasX = x;
+                                let canvasY = y;
+                                
+                                // 如果是LogicFlow画布，尝试坐标转换
+                                if (this.lf && this.lf.getPointByClient && container === graphContainer) {
+                                    try {
+                                        const point = this.lf.getPointByClient(x, y);
+                                        console.log('LogicFlow坐标转换:', point);
+                                        canvasX = point.x;
+                                        canvasY = point.y;
+                                    } catch (error) {
+                                        console.error('坐标转换失败:', error);
+                                        canvasX = x;
+                                        canvasY = y;
+                                    }
+                                }
+                                
+                                this.addNodeByType(nodeType, canvasX, canvasY);
+                            });
+                        }
+                    });
+                    
+                    console.log('拖拽事件绑定完成');
                 }, 500);
             }
 
@@ -1158,10 +1290,26 @@
                 const nodeType = nodeTypeMap[type] || 'LLMNode';
                 console.log('映射的节点类型:', nodeType);
                 
+                // 根据原始类型设置节点文本
+                const nodeTexts = {
+                    'start': '开始',
+                    'end': '结束',
+                    'llm': '大模型',
+                    'knowledge': '知识库',
+                    'condition': '条件判断',
+                    'api': 'API调用',
+                    'prompt': '提示词',
+                    'loop': '循环',
+                    'switch': '分支',
+                    'database': '数据库',
+                    'file': '文件处理'
+                };
+                
                 const nodeData = {
                     type: nodeType,
                     x: x,
                     y: y,
+                    text: nodeTexts[type] || type,
                     properties: {
                         originalType: type,
                         config: this.getDefaultNodeConfig(type)
@@ -1678,9 +1826,27 @@
             window.app.toggleBottomPanel();
         }
 
-        function testAddNode() {
+        function addSampleWorkflow() {
             if (window.app) {
-                window.app.addNodeByType('llm', 200, 200);
+                // 清空当前工作流
+                window.app.lf.clearData();
+                
+                // 添加示例节点
+                window.app.addNodeByType('start', 200, 100);
+                setTimeout(() => {
+                    window.app.addNodeByType('llm', 200, 200);
+                }, 100);
+                setTimeout(() => {
+                    window.app.addNodeByType('knowledge', 350, 200);
+                }, 200);
+                setTimeout(() => {
+                    window.app.addNodeByType('condition', 200, 300);
+                }, 300);
+                setTimeout(() => {
+                    window.app.addNodeByType('end', 200, 400);
+                }, 400);
+                
+                window.app.addLog('info', '示例工作流已创建，您可以尝试连接这些节点');
             } else {
                 console.error('应用未初始化');
             }
