@@ -221,6 +221,8 @@
             cursor: grab;
             transition: all 0.2s ease;
             user-select: none;
+            position: relative;
+            z-index: 1;
         }
 
         .node-item:hover {
@@ -520,6 +522,9 @@
                     <button class="btn btn-secondary" onclick="clearWorkflow()">
                         <i class="fas fa-trash"></i> 清空
                     </button>
+                    <button class="btn btn-success" onclick="testAddNode()">
+                        <i class="fas fa-plus"></i> 测试添加节点
+                    </button>
                 </div>
             </div>
             <div class="toolbar-right">
@@ -684,12 +689,19 @@
             init() {
                 this.initLogicFlow();
                 this.registerCustomNodes();
-                this.bindEvents();
-                this.addLog('success', '流程编排工具已成功启动');
+                // 延迟绑定事件，确保LogicFlow完全初始化
+                setTimeout(() => {
+                    this.bindEvents();
+                    this.addLog('success', '流程编排工具已成功启动');
+                }, 100);
             }
 
             // 初始化 LogicFlow
             initLogicFlow() {
+                console.log('开始初始化LogicFlow');
+                const container = document.getElementById('graph');
+                console.log('画布容器:', container);
+                
                 this.lf = new LogicFlow.default({
                     container: document.getElementById('graph'),
                     grid: {
@@ -738,6 +750,8 @@
                     edgeTextDraggable: false,
                 });
 
+                console.log('LogicFlow初始化完成:', this.lf);
+                
                 // 注册扩展插件
                 if (this.lf.extension?.selectionSelect) {
                     this.lf.extension.selectionSelect.openSelectionSelect();
@@ -1019,6 +1033,8 @@
                 this.lf.register(ConditionNodeModel);
                 this.lf.register(APINode);
                 this.lf.register(APINodeModel);
+                
+                console.log('所有自定义节点注册完成');
             }
 
             // 绑定事件
@@ -1062,40 +1078,69 @@
 
             // 绑定拖拽事件
             bindDragEvents() {
-                const nodeItems = document.querySelectorAll('.node-item');
-                nodeItems.forEach(item => {
-                    item.addEventListener('dragstart', (e) => {
-                        const nodeType = item.getAttribute('data-type');
-                        e.dataTransfer.setData('text/plain', nodeType);
-                        item.classList.add('dragging');
+                // 等待DOM完全渲染后再绑定事件
+                setTimeout(() => {
+                    const nodeItems = document.querySelectorAll('.node-item');
+                    console.log('找到节点项数量:', nodeItems.length);
+                    
+                    nodeItems.forEach(item => {
+                        item.addEventListener('dragstart', (e) => {
+                            const nodeType = item.getAttribute('data-type');
+                            console.log('开始拖拽节点:', nodeType);
+                            e.dataTransfer.setData('text/plain', nodeType);
+                            item.classList.add('dragging');
+                        });
+
+                        item.addEventListener('dragend', (e) => {
+                            item.classList.remove('dragging');
+                            console.log('拖拽结束');
+                        });
                     });
 
-                    item.addEventListener('dragend', (e) => {
-                        item.classList.remove('dragging');
-                    });
-                });
+                    const graphContainer = document.getElementById('graph');
+                    if (graphContainer) {
+                        graphContainer.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'copy';
+                        });
 
-                const graphContainer = document.getElementById('graph');
-                graphContainer.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                });
-
-                graphContainer.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    const nodeType = e.dataTransfer.getData('text/plain');
-                    const rect = graphContainer.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    
-                    // 转换为LogicFlow坐标
-                    const point = this.lf.getPointByClient(x, y);
-                    
-                    this.addNodeByType(nodeType, point.x, point.y);
-                });
+                        graphContainer.addEventListener('drop', (e) => {
+                            e.preventDefault();
+                            const nodeType = e.dataTransfer.getData('text/plain');
+                            console.log('放置节点:', nodeType);
+                            
+                            if (!nodeType) return;
+                            
+                            const rect = graphContainer.getBoundingClientRect();
+                            const x = e.clientX - rect.left;
+                            const y = e.clientY - rect.top;
+                            
+                            console.log('坐标:', x, y);
+                            
+                            // 检查LogicFlow是否已初始化
+                            if (this.lf && this.lf.getPointByClient) {
+                                try {
+                                    // 转换为LogicFlow坐标
+                                    const point = this.lf.getPointByClient(x, y);
+                                    console.log('转换后坐标:', point);
+                                    this.addNodeByType(nodeType, point.x, point.y);
+                                } catch (error) {
+                                    console.error('坐标转换失败，使用原始坐标:', error);
+                                    this.addNodeByType(nodeType, x - 50, y - 20);
+                                }
+                            } else {
+                                console.log('LogicFlow未初始化，使用原始坐标');
+                                this.addNodeByType(nodeType, x - 50, y - 20);
+                            }
+                        });
+                    }
+                }, 500);
             }
 
             // 根据类型添加节点
             addNodeByType(type, x, y) {
+                console.log('添加节点类型:', type, '坐标:', x, y);
+                
                 const nodeTypeMap = {
                     'start': 'StartNode',
                     'end': 'EndNode',
@@ -1111,6 +1156,7 @@
                 };
 
                 const nodeType = nodeTypeMap[type] || 'LLMNode';
+                console.log('映射的节点类型:', nodeType);
                 
                 const nodeData = {
                     type: nodeType,
@@ -1122,11 +1168,22 @@
                     }
                 };
 
-                const node = this.lf.addNode(nodeData);
-                
-                if (node) {
-                    this.nodeConfigs.set(node.id, nodeData.properties.config);
-                    this.addLog('success', `已添加${this.getNodeDisplayName(type)}节点`);
+                try {
+                    console.log('准备添加节点，数据:', nodeData);
+                    const node = this.lf.addNode(nodeData);
+                    console.log('节点添加结果:', node);
+                    
+                    if (node) {
+                        this.nodeConfigs.set(node.id, nodeData.properties.config);
+                        this.addLog('success', `已添加${this.getNodeDisplayName(type)}节点`);
+                        console.log('节点添加成功:', node.id);
+                    } else {
+                        console.error('节点添加失败');
+                        this.addLog('error', '节点添加失败');
+                    }
+                } catch (error) {
+                    console.error('添加节点时出错:', error);
+                    this.addLog('error', '添加节点时出错: ' + error.message);
                 }
             }
 
@@ -1619,6 +1676,14 @@
 
         function toggleBottomPanel() {
             window.app.toggleBottomPanel();
+        }
+
+        function testAddNode() {
+            if (window.app) {
+                window.app.addNodeByType('llm', 200, 200);
+            } else {
+                console.error('应用未初始化');
+            }
         }
 
         // 页面加载完成后初始化应用
