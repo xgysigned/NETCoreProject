@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI流程编排工具</title>
+    <script src="https://unpkg.com/@logicflow/core@2.0.0-next.17/dist/index.js"></script>
+    <script src="https://unpkg.com/@logicflow/extension@2.0.0-next.17/dist/index.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@logicflow/core@2.0.0-next.17/dist/style/index.css">
+    <link rel="stylesheet" href="https://unpkg.com/@logicflow/extension@2.0.0-next.17/dist/style/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部工具栏 -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <div class="logo">
+                    <i class="fas fa-robot"></i>
+                    <span>AI流程编排工具</span>
+                </div>
+                <div class="toolbar-actions">
+                    <button class="btn btn-primary" onclick="runWorkflow()">
+                        <i class="fas fa-play"></i> 运行
+                    </button>
+                    <button class="btn btn-secondary" onclick="saveWorkflow()">
+                        <i class="fas fa-save"></i> 保存
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearWorkflow()">
+                        <i class="fas fa-trash"></i> 清空
+                    </button>
+                </div>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn btn-outline" onclick="toggleMiniMap()">
+                    <i class="fas fa-map"></i> 小地图
+                </button>
+                <button class="btn btn-outline" onclick="fitView()">
+                    <i class="fas fa-expand-arrows-alt"></i> 适应画布
+                </button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- 左侧节点面板 -->
+            <div class="sidebar-left">
+                <div class="panel-header">
+                    <h3>节点库</h3>
+                </div>
+                <div class="node-panel">
+                    <div class="node-category">
+                        <div class="category-title">
+                            <i class="fas fa-play-circle"></i>
+                            <span>基础节点</span>
+                        </div>
+                        <div class="node-list">
+                            <div class="node-item" draggable="true" data-type="start">
+                                <i class="fas fa-play text-green"></i>
+                                <span>开始</span>
+                            </div>
+                            <div class="node-item" draggable="true" data-type="end">
+                                <i class="fas fa-stop text-red"></i>
+                                <span>结束</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="node-category">
+                        <div class="category-title">
+                            <i class="fas fa-brain"></i>
+                            <span>AI节点</span>
+                        </div>
+                        <div class="node-list">
+                            <div class="node-item" draggable="true" data-type="llm">
+                                <i class="fas fa-robot text-blue"></i>
+                                <span>大模型</span>
+                            </div>
+                            <div class="node-item" draggable="true" data-type="knowledge">
+                                <i class="fas fa-book text-purple"></i>
+                                <span>知识库</span>
+                            </div>
+                            <div class="node-item" draggable="true" data-type="prompt">
+                                <i class="fas fa-comment-dots text-orange"></i>
+                                <span>提示词</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="node-category">
+                        <div class="category-title">
+                            <i class="fas fa-cogs"></i>
+                            <span>逻辑节点</span>
+                        </div>
+                        <div class="node-list">
+                            <div class="node-item" draggable="true" data-type="condition">
+                                <i class="fas fa-code-branch text-yellow"></i>
+                                <span>条件判断</span>
+                            </div>
+                            <div class="node-item" draggable="true" data-type="loop">
+                                <i class="fas fa-redo text-cyan"></i>
+                                <span>循环</span>
+                            </div>
+                            <div class="node-item" draggable="true" data-type="switch">
+                                <i class="fas fa-random text-pink"></i>
+                                <span>分支</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="node-category">
+                        <div class="category-title">
+                            <i class="fas fa-plug"></i>
+                            <span>插件节点</span>
+                        </div>
+                        <div class="node-list">
+                            <div class="node-item" draggable="true" data-type="api">
+                                <i class="fas fa-exchange-alt text-indigo"></i>
+                                <span>API调用</span>
+                            </div>
+                            <div class="node-item" draggable="true" data-type="database">
+                                <i class="fas fa-database text-gray"></i>
+                                <span>数据库</span>
+                            </div>
+                            <div class="node-item" draggable="true" data-type="file">
+                                <i class="fas fa-file text-brown"></i>
+                                <span>文件处理</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主画布区域 -->
+            <div class="canvas-container">
+                <div id="graph" class="graph-container"></div>
+                <div class="canvas-controls">
+                    <button class="control-btn" onclick="zoomIn()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="control-btn" onclick="zoomOut()">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <button class="control-btn" onclick="resetZoom()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 右侧属性面板 -->
+            <div class="sidebar-right">
+                <div class="panel-header">
+                    <h3>属性配置</h3>
+                </div>
+                <div class="property-panel" id="propertyPanel">
+                    <div class="empty-state">
+                        <i class="fas fa-mouse-pointer"></i>
+                        <p>选择一个节点来配置属性</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部日志面板 -->
+        <div class="bottom-panel" id="bottomPanel">
+            <div class="panel-header">
+                <h3>运行日志</h3>
+                <button class="btn btn-sm" onclick="toggleBottomPanel()">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
+            <div class="log-content">
+                <div class="log-item">
+                    <span class="log-time">[2024-01-01 12:00:00]</span>
+                    <span class="log-level info">INFO</span>
+                    <span class="log-message">流程编排工具已启动</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 节点配置模态框 -->
+    <div class="modal" id="nodeConfigModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>节点配置</h3>
+                <button class="modal-close" onclick="closeNodeConfig()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="nodeConfigBody">
+                <!-- 动态内容 -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeNodeConfig()">取消</button>
+                <button class="btn btn-primary" onclick="saveNodeConfig()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
