@@ -1,0 +1,299 @@
+@if (IsVisible)
+{
+    <div class="modal-backdrop" @onclick="Close">
+        <div class="modal-dialog" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3>配置AI对话节点</h3>
+                <button class="close-btn" @onclick="Close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="nodeName">节点名称</label>
+                    <input id="nodeName" type="text" @bind="NodeName" class="form-control" placeholder="输入节点名称..." />
+                </div>
+                
+                <div class="form-group">
+                    <label for="aiModel">AI模型</label>
+                    <select id="aiModel" @bind="SelectedModel" class="form-control">
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                        <option value="gpt-4">GPT-4</option>
+                        <option value="claude-3">Claude-3</option>
+                        <option value="gemini-pro">Gemini Pro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="systemPrompt">系统提示词</label>
+                    <textarea id="systemPrompt" @bind="SystemPrompt" class="form-control" rows="4" 
+                              placeholder="输入系统提示词，定义AI的角色和行为..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="temperature">创造性 (Temperature)</label>
+                    <div class="slider-container">
+                        <input id="temperature" type="range" min="0" max="1" step="0.1" @bind="Temperature" class="slider" />
+                        <span class="slider-value">@Temperature.ToString("F1")</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="maxTokens">最大输出长度</label>
+                    <input id="maxTokens" type="number" @bind="MaxTokens" class="form-control" min="100" max="4000" />
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @onclick="Close">取消</button>
+                <button class="btn btn-primary" @onclick="Save">保存配置</button>
+            </div>
+        </div>
+    </div>
+}
+
+@using Models
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<AiNodeConfig> OnSave { get; set; }
+    
+    private string NodeName { get; set; } = "AI对话节点";
+    private string SelectedModel { get; set; } = "gpt-3.5-turbo";
+    private string SystemPrompt { get; set; } = "";
+    private double Temperature { get; set; } = 0.7;
+    private int MaxTokens { get; set; } = 1000;
+
+    private async Task Close()
+    {
+        IsVisible = false;
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task Save()
+    {
+        var config = new AiNodeConfig
+        {
+            NodeName = NodeName,
+            Model = SelectedModel,
+            SystemPrompt = SystemPrompt,
+            Temperature = Temperature,
+            MaxTokens = MaxTokens
+        };
+        
+        await OnSave.InvokeAsync(config);
+        await Close();
+    }
+
+    public void Show(AiNodeConfig? existingConfig = null)
+    {
+        if (existingConfig != null)
+        {
+            NodeName = existingConfig.NodeName;
+            SelectedModel = existingConfig.Model;
+            SystemPrompt = existingConfig.SystemPrompt;
+            Temperature = existingConfig.Temperature;
+            MaxTokens = existingConfig.MaxTokens;
+        }
+        else
+        {
+            // 重置为默认值
+            NodeName = "AI对话节点";
+            SelectedModel = "gpt-3.5-turbo";
+            SystemPrompt = "";
+            Temperature = 0.7;
+            MaxTokens = 1000;
+        }
+        
+        IsVisible = true;
+        StateHasChanged();
+    }
+
+
+}
+
+<style>
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .modal-dialog {
+        background: white;
+        border-radius: 12px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 1px solid #dee2e6;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .close-btn {
+        background: transparent;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+    }
+
+    .close-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 500;
+        color: #333;
+        font-size: 14px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 2px solid #e1e5e9;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+        box-sizing: border-box;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .slider-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .slider {
+        flex: 1;
+        height: 6px;
+        border-radius: 3px;
+        background: #e1e5e9;
+        outline: none;
+        -webkit-appearance: none;
+    }
+
+    .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #667eea;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #667eea;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .slider-value {
+        min-width: 30px;
+        text-align: center;
+        font-weight: 500;
+        color: #667eea;
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 20px;
+        border-top: 1px solid #dee2e6;
+        background: #f8f9fa;
+        border-radius: 0 0 12px 12px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 14px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+</style>

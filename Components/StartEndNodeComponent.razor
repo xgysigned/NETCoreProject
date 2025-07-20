@@ -1,0 +1,73 @@
+@using Blazor.Diagrams.Core.Models
+@inherits Blazor.Diagrams.Components.NodeWidget
+
+<div class="@CssClass">
+    @if (Node.Title == "开始节点")
+    {
+        <div class="start-node">
+            <div class="start-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polygon fill="white" points="10,8 16,12 10,16"/>
+                </svg>
+            </div>
+            <span class="node-title">@Node.Title</span>
+        </div>
+    }
+    else if (Node.Title == "结束节点")
+    {
+        <div class="end-node">
+            <div class="end-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="12" r="10"/>
+                    <rect x="8" y="8" width="8" height="8" fill="white"/>
+                </svg>
+            </div>
+            <span class="node-title">@Node.Title</span>
+        </div>
+    }
+</div>
+
+<style>
+    .start-node, .end-node {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border-radius: 25px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        font-weight: 500;
+        min-width: 120px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .start-node {
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+        color: white;
+        border: 2px solid #4CAF50;
+    }
+
+    .end-node {
+        background: linear-gradient(135deg, #f44336, #d32f2f);
+        color: white;
+        border: 2px solid #f44336;
+    }
+
+    .start-node:hover, .end-node:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .start-icon, .end-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .node-title {
+        font-size: 14px;
+        white-space: nowrap;
+    }
+</style>

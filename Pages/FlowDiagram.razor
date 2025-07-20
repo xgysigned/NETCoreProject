@@ -1,0 +1,335 @@
+@page "/flow"
+@using Blazor.Diagrams.Components
+@using Blazor.Diagrams.Components.Widgets
+@using Blazor.Diagrams.Core.Models
+@using Blazor.Diagrams.Core.Geometry
+@using Blazor.Diagrams.Core.Anchors
+@using Blazor.Diagrams.Core.PathGenerators
+@using Blazor.Diagrams.Core.Routers
+@using Components
+@using Models
+
+<h1>AI工作流编辑器</h1>
+
+<!-- 配置对话框 -->
+<AiConfigDialog @ref="configDialog" 
+                IsVisible="showConfigDialog" 
+                OnClose="() => showConfigDialog = false"
+                OnSave="SaveNodeConfig" />
+
+<div class="flow-editor">
+    <div class="toolbar">
+        <button @onclick="AddAiDialogNode" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12,2A2,2 0 0,1 14,4C14,4.74 13.6,5.39 13,5.73V7H14A7,7 0 0,1 21,14H22A1,1 0 0,1 23,15V18A1,1 0 0,1 22,19H21V20A2,2 0 0,1 19,22H5A2,2 0 0,1 3,20V19H2A1,1 0 0,1 1,18V15A1,1 0 0,1 2,14H3A7,7 0 0,1 10,7H11V5.73C10.4,5.39 10,4.74 10,4A2,2 0 0,1 12,2M7.5,13A2.5,2.5 0 0,0 5,15.5A2.5,2.5 0 0,0 7.5,18A2.5,2.5 0 0,0 10,15.5A2.5,2.5 0 0,0 7.5,13M16.5,13A2.5,2.5 0 0,0 14,15.5A2.5,2.5 0 0,0 16.5,18A2.5,2.5 0 0,0 19,15.5A2.5,2.5 0 0,0 16.5,13Z"/>
+            </svg>
+            添加AI对话节点
+        </button>
+        <button @onclick="ClearDiagram" class="btn btn-secondary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+            </svg>
+            清空画布
+        </button>
+    </div>
+    
+    <div class="diagram-container">
+        <CascadingValue Value="Diagram" IsFixed="true">
+            <DiagramCanvas @ondblclick="OnCanvasDoubleClick">
+                <Widgets>
+                    <NavigatorWidget Width="200" Height="120"
+                                    Class="border border-black bg-white absolute"
+                                    Style="bottom: 15px; right: 15px; position: absolute;" />
+                </Widgets>
+            </DiagramCanvas>
+        </CascadingValue>
+    </div>
+</div>
+
+@code {
+    private BlazorDiagram Diagram { get; set; } = null!;
+    private NodeModel _startNode = null!;
+    private NodeModel _endNode = null!;
+    private int _nodeCounter = 1;
+    private List<CustomNodeModel> _middleNodes = new List<CustomNodeModel>();
+    private AiConfigDialog configDialog = null!;
+    private bool showConfigDialog = false;
+    private NodeModel? currentConfigNode;
+
+    protected override void OnInitialized()
+    {
+        var options = new BlazorDiagramOptions
+        {
+            AllowMultiSelection = true,
+            Zoom = { Enabled = true },
+            Links = {
+                DefaultRouter = new NormalRouter(),
+                DefaultPathGenerator = new SmoothPathGenerator()
+            },
+        };
+
+        Diagram = new BlazorDiagram(options);
+
+        // 订阅节点双击事件
+        Diagram.PointerDoubleClick += OnNodeDoubleClick;
+
+        // 注册自定义节点组件
+        Diagram.RegisterComponent<StartEndNodeComponent>(node => 
+            (node as CustomNodeModel)?.NodeType is "start" or "end");
+        Diagram.RegisterComponent<AiDialogNodeComponent>(node => 
+            (node as CustomNodeModel)?.NodeType == "ai-dialog");
+
+        CreateStartAndEndNodes();
+    }
+
+    private void CreateStartAndEndNodes()
+    {
+        // 创建开始节点
+        _startNode = new CustomNodeModel(position: new Point(50, 200))
+        {
+            Title = "开始节点",
+            NodeType = "start"
+        };
+        _startNode.AddPort(PortAlignment.Right);
+
+        // 创建结束节点
+        _endNode = new CustomNodeModel(position: new Point(800, 200))
+        {
+            Title = "结束节点",
+            NodeType = "end"
+        };
+        _endNode.AddPort(PortAlignment.Left);
+
+        // 添加节点到图表
+        Diagram.Nodes.Add(_startNode);
+        Diagram.Nodes.Add(_endNode);
+
+        // 刷新布局
+        StateHasChanged();
+    }
+
+    private void AddAiDialogNode()
+    {
+        // 获取最后一个非结束节点
+        var lastNonEndNode = _middleNodes.Count > 0 ? _middleNodes.Last() : _startNode;
+
+        // 获取或创建前一个节点的右端口
+        var prevRightPort = lastNonEndNode.Ports.FirstOrDefault(p => p.Alignment == PortAlignment.Right)
+                           ?? lastNonEndNode.AddPort(PortAlignment.Right);
+
+        // 计算新节点位置
+        var newX = lastNonEndNode.Position.X + 200;
+        var newY = _startNode.Position.Y;
+
+        // 如果新节点会与结束节点重叠，调整结束节点位置
+        if (newX + 150 > _endNode.Position.X)
+        {
+            _endNode.Position = new Point(newX + 250, _endNode.Position.Y);
+        }
+
+        // 创建AI对话节点
+        var newNode = new CustomNodeModel(position: new Point(newX, newY))
+        {
+            Title = $"AI对话节点 {++_nodeCounter}",
+            NodeType = "ai-dialog"
+        };
+
+        // 为新节点添加端口
+        var newLeftPort = newNode.AddPort(PortAlignment.Left);
+        newNode.AddPort(PortAlignment.Right);
+
+        // 添加到中间节点列表
+        _middleNodes.Add(newNode);
+
+        // 重新构建节点列表
+        RebuildNodesList();
+
+        // 创建连接
+        var sourceAnchor = new SinglePortAnchor(prevRightPort);
+        var targetAnchor = new SinglePortAnchor(newLeftPort);
+        var link = new LinkModel(sourceAnchor, targetAnchor);
+        
+        // 设置连接样式
+        link.Color = "#667eea";
+        link.Width = 2;
+        
+        Diagram.Links.Add(link);
+
+        // 自动连接到结束节点（如果这是第一个中间节点）
+        ConnectToEndNodeIfNeeded(newNode);
+
+        StateHasChanged();
+    }
+
+    private void ConnectToEndNodeIfNeeded(NodeModel newNode)
+    {
+        // 检查是否需要连接到结束节点
+        var endLeftPort = _endNode.Ports.FirstOrDefault(p => p.Alignment == PortAlignment.Left);
+        if (endLeftPort != null)
+        {
+            // 检查结束节点是否已经有连接
+            var existingLinkToEnd = Diagram.Links.FirstOrDefault(l => 
+                l.Target is SinglePortAnchor spa && spa.Port == endLeftPort);
+
+            if (existingLinkToEnd != null)
+            {
+                // 移除现有连接
+                Diagram.Links.Remove(existingLinkToEnd);
+            }
+
+            // 创建新的连接到结束节点
+            var newRightPort = newNode.Ports.FirstOrDefault(p => p.Alignment == PortAlignment.Right);
+            if (newRightPort != null)
+            {
+                var sourceAnchor = new SinglePortAnchor(newRightPort);
+                var targetAnchor = new SinglePortAnchor(endLeftPort);
+                var linkToEnd = new LinkModel(sourceAnchor, targetAnchor);
+                linkToEnd.Color = "#667eea";
+                linkToEnd.Width = 2;
+                Diagram.Links.Add(linkToEnd);
+            }
+        }
+    }
+
+    private void RebuildNodesList()
+    {
+        Diagram.Nodes.Clear();
+        Diagram.Nodes.Add(_startNode);
+        
+        foreach (var node in _middleNodes)
+        {
+            Diagram.Nodes.Add(node);
+        }
+        
+        Diagram.Nodes.Add(_endNode);
+    }
+
+    private void ClearDiagram()
+    {
+        // 清除所有连接
+        Diagram.Links.Clear();
+        
+        // 清除中间节点
+        _middleNodes.Clear();
+        _nodeCounter = 1;
+
+        // 重建节点列表（只保留开始和结束节点）
+        RebuildNodesList();
+
+        StateHasChanged();
+    }
+
+    private async Task SaveNodeConfig(AiNodeConfig config)
+    {
+        if (currentConfigNode is CustomNodeModel customNode)
+        {
+            customNode.Title = config.NodeName;
+            customNode.AiConfig = config;
+        }
+        
+        currentConfigNode = null;
+        showConfigDialog = false;
+        StateHasChanged();
+    }
+
+    private void ShowNodeConfig(NodeModel node)
+    {
+        currentConfigNode = node;
+        showConfigDialog = true;
+        
+        // 如果是自定义节点且有配置，传递现有配置
+        AiNodeConfig? existingConfig = null;
+        if (node is CustomNodeModel customNode && customNode.AiConfig != null)
+        {
+            existingConfig = customNode.AiConfig;
+        }
+        
+        configDialog?.Show(existingConfig);
+        StateHasChanged();
+    }
+
+    private void OnNodeDoubleClick(Blazor.Diagrams.Core.Models.Base.Model? model, Blazor.Diagrams.Core.Events.PointerEventArgs args)
+    {
+        if (model is CustomNodeModel node && node.NodeType == "ai-dialog")
+        {
+            ShowNodeConfig(node);
+        }
+    }
+
+    private void OnCanvasDoubleClick()
+    {
+        // Handle canvas double click if needed
+    }
+}
+
+<style>
+    .flow-editor {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .toolbar {
+        background: #f8f9fa;
+        padding: 16px;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+    }
+
+    .diagram-container {
+        flex: 1;
+        position: relative;
+        background: #f8f9fa;
+        background-image: 
+            radial-gradient(circle, #dee2e6 1px, transparent 1px);
+        background-size: 20px 20px;
+    }
+
+    h1 {
+        margin: 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-size: 24px;
+        font-weight: 600;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+</style>
