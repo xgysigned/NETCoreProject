@@ -1,11 +1,13 @@
 @page "/flow"
-@using Blazor.Diagrams.Components
-@using Blazor.Diagrams.Components.Widgets
-@using Blazor.Diagrams.Core.Models
-@using Blazor.Diagrams.Core.Geometry
-@using Blazor.Diagrams.Core.Anchors
-@using Blazor.Diagrams.Core.PathGenerators
-@using Blazor.Diagrams.Core.Routers
+@using Z.Blazor.Diagrams
+@using Z.Blazor.Diagrams.Components
+@using Z.Blazor.Diagrams.Core.Models
+@using Z.Blazor.Diagrams.Core.Geometry
+@using Z.Blazor.Diagrams.Core.Anchors
+@using Z.Blazor.Diagrams.Core.PathGenerators
+@using Z.Blazor.Diagrams.Core.Routers
+@using Z.Blazor.Diagrams.Components.Widgets
+@using Z.Blazor.Diagrams.Core.Events
 @using Components
 @using Models
 
@@ -36,6 +38,19 @@
     <div class="diagram-container">
         <CascadingValue Value="Diagram" IsFixed="true">
             <DiagramCanvas @ondblclick="OnCanvasDoubleClick">
+                <NodeWidget>
+                    @if (context is CustomNodeModel customNode)
+                    {
+                        @if (customNode.NodeType is "start" or "end")
+                        {
+                            <StartEndNodeComponent />
+                        }
+                        else if (customNode.NodeType == "ai-dialog")
+                        {
+                            <AiDialogNodeComponent />
+                        }
+                    }
+                </NodeWidget>
                 <Widgets>
                     <NavigatorWidget Width="200" Height="120"
                                     Class="border border-black bg-white absolute"
@@ -72,12 +87,6 @@
 
         // 订阅节点双击事件
         Diagram.PointerDoubleClick += OnNodeDoubleClick;
-
-        // 注册自定义节点组件
-        Diagram.RegisterComponent<CustomNodeModel, StartEndNodeComponent>(node => 
-            node.NodeType is "start" or "end");
-        Diagram.RegisterComponent<CustomNodeModel, AiDialogNodeComponent>(node => 
-            node.NodeType == "ai-dialog");
 
         CreateStartAndEndNodes();
     }
@@ -248,7 +257,7 @@
         StateHasChanged();
     }
 
-    private void OnNodeDoubleClick(Blazor.Diagrams.Core.Models.Base.Model? model, Blazor.Diagrams.Core.Events.PointerEventArgs args)
+    private void OnNodeDoubleClick(Z.Blazor.Diagrams.Core.Models.Base.Model? model, Z.Blazor.Diagrams.Core.Events.PointerEventArgs args)
     {
         if (model is CustomNodeModel node && node.NodeType == "ai-dialog")
         {
