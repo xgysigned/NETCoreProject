@@ -1,7 +1,6 @@
 @using Z.Blazor.Diagrams.Core.Models
-@inherits Z.Blazor.Diagrams.Components.NodeWidget
 
-<div class="@CssClass">
+<div class="ai-dialog-node-widget">
     <div class="ai-dialog-node">
         <div class="ai-node-header">
             <div class="ai-icon">
@@ -36,6 +35,7 @@
 </div>
 
 @code {
+    [Parameter] public NodeModel Node { get; set; } = null!;
     [Parameter] public EventCallback<NodeModel> OnConfigClick { get; set; }
 
     private async Task OpenConfig()

@@ -43,11 +43,11 @@
                     {
                         @if (customNode.NodeType is "start" or "end")
                         {
-                            <StartEndNodeComponent />
+                            <StartEndNodeComponent Node="context" />
                         }
                         else if (customNode.NodeType == "ai-dialog")
                         {
-                            <AiDialogNodeComponent />
+                            <AiDialogNodeComponent Node="context" OnConfigClick="ShowNodeConfig" />
                         }
                     }
                 </NodeWidget>

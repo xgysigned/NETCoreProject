@@ -1,7 +1,6 @@
 @using Z.Blazor.Diagrams.Core.Models
-@inherits Z.Blazor.Diagrams.Components.NodeWidget
 
-<div class="@CssClass">
+<div class="start-end-node-widget">
     @if (Node.Title == "开始节点")
     {
         <div class="start-node">
@@ -27,6 +26,10 @@
         </div>
     }
 </div>
+
+@code {
+    [Parameter] public NodeModel Node { get; set; } = null!;
+}
 
 <style>
     .start-node, .end-node {
