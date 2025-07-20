@@ -74,10 +74,10 @@
         Diagram.PointerDoubleClick += OnNodeDoubleClick;
 
         // 注册自定义节点组件
-        Diagram.RegisterComponent<StartEndNodeComponent>(node => 
-            (node as CustomNodeModel)?.NodeType is "start" or "end");
-        Diagram.RegisterComponent<AiDialogNodeComponent>(node => 
-            (node as CustomNodeModel)?.NodeType == "ai-dialog");
+        Diagram.RegisterComponent<CustomNodeModel, StartEndNodeComponent>(node => 
+            node.NodeType is "start" or "end");
+        Diagram.RegisterComponent<CustomNodeModel, AiDialogNodeComponent>(node => 
+            node.NodeType == "ai-dialog");
 
         CreateStartAndEndNodes();
     }
