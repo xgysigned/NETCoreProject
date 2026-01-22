@@ -1,6 +1,6 @@
 # AI流程编排工具
 
-基于 LogicFlow 构建的模仿腾讯元宝风格的 LLM 流程编排界面，支持拖拽式创建 AI 工作流。
+基于 Blazor.Diagrams 构建的模仿腾讯元宝风格的 LLM 流程编排界面，支持拖拽式创建 AI 工作流。
 
 ## 🎯 项目特点
 
@@ -142,25 +142,10 @@
 - [ ] 企业级部署方案
 - [ ] 多租户管理系统
 
-## 🤝 贡献指南
-
-欢迎提交 Issue 和 Pull Request 来改进项目：
-
-1. Fork 项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 打开 Pull Request
-
 ## 📄 许可证
 
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
-## 🙏 致谢
-
-- [LogicFlow](https://github.com/didi/LogicFlow) - 提供强大的流程图编辑能力
-- [Font Awesome](https://fontawesome.com/) - 提供丰富的图标资源
-- 腾讯元宝 - 界面设计灵感来源
 
 ## 📞 联系方式
 
